@@ -2,16 +2,23 @@
 
 import { supabase } from '../util/supabase'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
 import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { FormData } from '../_types/FormData'
+import Label from '../_components/Label'
+import Input from '../_components/Input'
+import Button from '../_components/Button'
 
 export default function Page() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>()
   const router = useRouter()
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const onSubmit = async (data: FormData) => {
+    const { email, password } = data;
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -31,51 +38,48 @@ export default function Page() {
         ログイン
       </h1>
       <div className="flex justify-center">
-        <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-[300px]">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-[300px]">
           <div>
-            <label
-              htmlFor="email"
-              className="block mb-2 text-xs font-medium text-text-900"
-            >
+            <Label htmlFor="email">
               ID（メールアドレス）
-            </label>
-            <input
+            </Label>
+            <Input
               type="email"
-              name="email"
               id="email"
-              className="bg-gray-50 border-[0.5px] border-text-900 text-text-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
               placeholder="name@example.com"
-              required
-              onChange={(e) => setEmail(e.target.value)}
-              value={email}
+              {...register("email", {
+                required: "ID(メールアドレス)は必須です。",
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: "有効なメールアドレスを入力してください。"
+                }
+              })}
+              error={errors.email?.message}
             />
           </div>
           <div>
-            <label
-              htmlFor="password"
-              className="block mb-2 text-xs font-medium text-text-900"
-            >
+            <Label htmlFor="password">
               パスワード
-            </label>
-            <input
+            </Label>
+            <Input
               type="password"
-              name="password"
               id="password"
               placeholder="••••••••"
-              className="bg-gray-50 border-[0.5px] border-text-900 text-text-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-              required
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
+              {...register("password", {
+                required: "パスワードは必須です。",
+                minLength: {
+                  value: 6,
+                  message: "パスワードは6文字以上で入力してください。"
+                }
+              })}
+              error={errors.password?.message}
             />
           </div>
 
           <div className="text-center">
-            <button
-              type="submit"
-              className="border-[0.5px] border-text-900 text-white bg-sub-400 hover:bg-sub-500 font-bold rounded-lg text-xs px-5 py-2.5 mt-4 mb-12 text-center"
-            >
+            <Button type="submit">
               ログイン
-            </button>
+            </Button>
           </div>
           <div className="text-xs">
             <p>※アカウントをお持ちでない方は <Link href="/signup" className="text-blue-600 underline">新規登録</Link> してください。

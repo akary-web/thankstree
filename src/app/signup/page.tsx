@@ -1,20 +1,26 @@
 'use client'
-
-import { supabase } from '../util/supabase' // 前の工程で作成したファイル
-import { useState } from 'react'
+import { supabase } from '../util/supabase'
 import Link from 'next/link'
+import { useForm } from 'react-hook-form'
 import { UserRequest } from '../_types/UserRequest'
+import { FormData } from '../_types/FormData'
+import Label from '../_components/Label'
+import Input from '../_components/Input'
+import Button from '../_components/Button'
 
 export default function Page() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>()
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const onSubmit = async (data: FormData) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      const { data: signUpData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
         options: {
           emailRedirectTo: `http://localhost:3000/login`,
         },
@@ -26,13 +32,13 @@ export default function Page() {
           error.message
         )
       }
-      if (!data.user?.id) {
+      if (!signUpData.user?.id) {
         throw new Error(
           "supabaseのユーザーIDがありません。"
         )
       }
-      const body:UserRequest ={
-        supabaseUserId:data.user.id
+      const body: UserRequest = {
+        supabaseUserId: signUpData.user.id
       }
       const response = await fetch("/api/user", {
         method: "POST",
@@ -46,9 +52,7 @@ export default function Page() {
         throw new Error("送信に失敗しました");
       }
 
-
-      setEmail('')
-      setPassword('')
+      reset()
       alert('確認メールを送信しました。')
 
     }
@@ -61,51 +65,49 @@ export default function Page() {
     <div>
       <h1 className='font-bold text-softblack-900 text-xl  text-center pt-[122px] pb-[44px]'>新規登録</h1>
       <div className="flex justify-center">
-        <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-[300px]">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-[300px]">
           <div>
-            <label
-              htmlFor="email"
-              className="block mb-2 text-xs font-medium text-text-900"
-            >
+            <Label htmlFor="email">
               メールアドレス
-            </label>
-            <input
+            </Label>
+            <Input
               type="email"
-              name="email"
               id="email"
-              className="bg-gray-50 border-[0.5px] border-text-900 text-text-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
               placeholder="name@example.com"
-              required
-              onChange={(e) => setEmail(e.target.value)}
-              value={email}
+              {...register("email", {
+                required: "メールアドレスは必須です。",
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: "有効なメールアドレスを入力してください。",
+                },
+              })}
+              error={errors.email?.message}
             />
           </div>
           <div>
-            <label
-              htmlFor="password"
-              className="block mb-2 text-xs font-medium text-text-900"
-            >
+            <Label htmlFor="password">
               パスワード
-            </label>
-            <input
+            </Label>
+            <Input
               type="password"
-              name="password"
               id="password"
               placeholder="••••••••"
-              className="bg-gray-50 border-[0.5px] border-text-900 text-text-900 text-xs rounded-lg  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-              required
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
+              {...register("password", {
+                required: "パスワードは必須です。",
+                minLength: {
+                  value: 6,
+                  message: "パスワードは6文字以上で入力してください。"
+                },
+              })
+              }
+              error={errors.password?.message}
             />
           </div>
 
           <div className='text-center'>
-            <button
-              type="submit"
-              className=" border-[0.5px] border-text-900 text-white bg-sub-400 hover:bg-sub-500 font-bold rounded-lg text-xs px-5 py-2.5 mt-4 mb-12 text-center"
-            >
+            <Button type="submit">
               登録
-            </button>
+            </Button>
           </div>
           <div className='text-xs'>
             <p>※登録済みの方は <Link href="/login" className="text-blue-600 underline" >こちら</Link> からログインしてください。</p>
@@ -116,6 +118,5 @@ export default function Page() {
 
   )
 }
-
 
 
