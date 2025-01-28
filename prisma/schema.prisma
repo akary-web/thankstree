@@ -1,0 +1,49 @@
+// このファイルを更新したら...
+// 0. `npm run dev` や `npx prisma studio` を停止
+// 1. dev.db を削除
+// 2. npx prisma db push　これだけでいい！
+// 3. npx prisma generate
+// 4. npx prisma db seed
+// String? は　NULLでも許容するってこと
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DIRECT_URL")
+}
+
+// ユーザー テーブル
+model User {
+  id               Int       @id @default(autoincrement())
+  supabaseUserId   String
+  name             String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  gratitudeNotes   GratitudeNote[]
+}
+
+// 感謝記録 テーブル
+model GratitudeNote {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  photoUrl    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id])
+  gratitudes  Gratitude[]
+}
+
+
+// 感謝リスト テーブル
+model Gratitude {
+  id                Int         @id @default(autoincrement())
+  gratitudeNoteId   Int
+  content           String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  gratitudeNote     GratitudeNote @relation(fields: [gratitudeNoteId], references: [id])
+}
